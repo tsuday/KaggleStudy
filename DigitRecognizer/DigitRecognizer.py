@@ -1,17 +1,16 @@
+import numpy as np
 import csv
 
 file_train = 'train.csv'
 file_test = 'test.csv'
-file_result = 'result.csv'
+file_result = 'result_np.csv'
 
 ## learn
 f = open(file_train, 'r')
 reader = csv.reader(f)
 
-count = [0] * 10
-pixels = {}
-for num in range(10):
-    pixels[num] = [0] * 784
+count = np.zeros(10)
+pixels = np.zeros([10, 784])
 
 next(reader) # read header
 
@@ -20,12 +19,10 @@ for r in reader:
     cols = list(map(int, r[:]))
     number = cols[0]
     count[number] += 1
-    for i in range(len(pixels[number])):
-        pixels[number][i] += cols[1:][i]
+    pixels[number] += cols[1:]
 
 for i in range(10):
-    for j in range(784):
-        pixels[i][j] = pixels[i][j] / count[i]
+        pixels[i] = pixels[i] / count[i]
 
 ## predict
 fp = open(file_test, 'r')
@@ -38,21 +35,23 @@ fresult.write('ImageId,Label\n')
 
 row=1
 for r in readerp:
-    test_pics = list(map(int, r))
+    test_pics = np.array(list(map(int, r)))
+    pic = np.zeros([10, 784])
+    for i in range(10):
+        pic[i] = test_pics
+
     diffMin = 255*255*784+1
     diffMinIndex = -1
+    # to avoid overflow, difference of pixel values are divided by 255
+    arDiff = np.sum(((pixels-pic)/255.0)*((pixels-pic)/255.0)*((pixels-pic)/255.0)*((pixels-pic)/255.0), axis=1)
     for nm in range(len(pixels)): # 10
-        diff = 0.0
-        for pc in range(784):
-            diff += (pixels[nm][pc]-test_pics[pc])*(pixels[nm][pc]-test_pics[pc])
-
+        diff = arDiff[nm]
         if diffMin > diff:
             diffMin = diff
             diffMinIndex = nm
 
     fresult.write(str(row)+","+str(diffMinIndex)+"\n")
     row += 1
-
 
 fresult.close()
 fp.close()
